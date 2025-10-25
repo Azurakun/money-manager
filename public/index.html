@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyMoney Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    
+    <style>
+        /* A simple fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Smooth transition for modal */
+        .modal-bg {
+            transition: opacity 0.3s ease;
+        }
+        .modal-card {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* Custom checkbox */
+        .custom-checkbox:checked {
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-800 antialiased">
+
+    <div class="flex flex-col min-h-screen">
+
+        <header class="sticky top-0 bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-100 z-10">
+            <nav class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <ion-icon name="wallet-outline" class="text-3xl text-indigo-600"></ion-icon>
+                    <h1 class="text-2xl font-bold text-gray-800">MyMoney</h1>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <select id="currency-select" class="bg-gray-100 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 block p-2 transition ease-in-out">
+                        <option value="IDR" selected>🇮🇩 IDR</option>
+                        <option value="USD">🇺🇸 USD</option>
+                    </select>
+
+                    <div class="sm:hidden flex space-x-2">
+                        <button id="nav-analytics-btn" class="p-2 rounded-full bg-indigo-100 text-indigo-600 active-nav-btn">
+                            <ion-icon name="pie-chart-outline" class="text-xl block"></ion-icon>
+                        </button>
+                         <button id="nav-list-btn" class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+                            <ion-icon name="list-outline" class="text-xl block"></ion-icon>
+                        </button>
+                        <button id="nav-debt-btn" class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+                            <ion-icon name="book-outline" class="text-xl block"></ion-icon>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6">
+            
+            <section id="analytics-view" class="fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+                        <h2 class="text-2xl font-semibold mb-1">Cash Flow</h2>
+                        <p class="text-gray-500 mb-6">Your income vs. expense breakdown.</p>
+                        <div class="max-h-96 flex justify-center items-center">
+                            <canvas id="analytics-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col space-y-6">
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-2xl shadow-md border border-green-200">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="p-2 bg-green-200 rounded-full">
+                                    <ion-icon name="arrow-up-outline" class="text-xl block text-green-700"></ion-icon>
+                                </div>
+                                <span class="text-lg font-medium text-green-800">Total Income</span>
+                            </div>
+                            <p id="summary-income" class="text-3xl font-bold text-green-700">Rp 0</p>
+                        </div>
+                         <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-2xl shadow-md border border-red-200">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="p-2 bg-red-200 rounded-full">
+                                    <ion-icon name="arrow-down-outline" class="text-xl block text-red-700"></ion-icon>
+                                </div>
+                                <span class="text-lg font-medium text-red-800">Total Expense</span>
+                            </div>
+                            <p id="summary-expense" class="text-3xl font-bold text-red-700">Rp 0</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-2xl shadow-md border border-indigo-200">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <div class="p-2 bg-indigo-200 rounded-full">
+                                    <ion-icon name="wallet-outline" class="text-xl block text-indigo-700"></ion-icon>
+                                </div>
+                                <span class="text-lg font-medium text-indigo-800">Net Balance</span>
+                            </div>
+                            <p id="summary-balance" class="text-3xl font-bold text-indigo-700">Rp 0</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="transactions-view" class="hidden fade-in">
+                <h2 class="text-2xl font-semibold mb-4">All Transactions</h2>
+                
+                <div class="flex flex-wrap gap-3 mb-4 p-4 bg-gray-50 rounded-xl border">
+                    <div class="flex-grow min-w-[150px]">
+                        <label for="filter-type" class="block text-sm font-medium text-gray-600 mb-1">Type</label>
+                        <select id="filter-type" class="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-300">
+                            <option value="">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div class="flex-grow min-w-[150px]">
+                        <label for="filter-tag" class="block text-sm font-medium text-gray-600 mb-1">Tag</label>
+                        <select id="filter-tag" class="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-300">
+                            <option value="">All Tags</option>
+                            </select>
+                    </div>
+                    <div class="flex-grow min-w-[150px]">
+                        <label for="sort-by" class="block text-sm font-medium text-gray-600 mb-1">Sort By</label>
+                        <select id="sort-by" class="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-300">
+                            <option value="date">Date</option>
+                            <option value="amount">Amount</option>
+                        </select>
+                    </div>
+                     <div class="flex-grow min-w-[100px]">
+                        <label for="sort-order" class="block text-sm font-medium text-gray-600 mb-1">Order</label>
+                        <select id="sort-order" class="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-300">
+                            <option value="desc">Descending</option>
+                            <option value="asc">Ascending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="transaction-list-container" class="space-y-4">
+                    <p id="no-transactions-msg" class="text-center text-gray-500 py-10">No transactions found. Add one to get started!</p>
+                </div>
+            </section>
+
+            <section id="debts-view" class="hidden fade-in">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                    <h2 class="text-2xl font-semibold">Debts Owed</h2>
+                    <button id="open-debt-modal-btn" class="flex items-center justify-center gap-2 w-full sm:w-auto bg-blue-600 text-white font-semibold px-5 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                        <ion-icon name="add-circle-outline" class="text-xl"></ion-icon>
+                        Add New Debt
+                    </button>
+                </div>
+                
+                <div id="debt-list-container" class="space-y-4">
+                    <p id="no-debts-msg" class="text-center text-gray-500 py-10">You have no pending debts. 🎉</p>
+                </div>
+            </section>
+
+        </main>
+
+        <button id="open-modal-btn" title="Add Transaction" class="fixed z-20 bottom-6 right-6 sm:bottom-10 sm:right-10 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+            <ion-icon name="add-outline" class="text-3xl block"></ion-icon>
+        </button>
+        
+        <div class="hidden sm:flex flex-col space-y-3 fixed z-20 top-1/2 -translate-y-1/2 left-6">
+            <button id="desktop-nav-analytics-btn" title="Analytics" class="p-3 rounded-full bg-indigo-100 text-indigo-600 shadow-md active-nav-btn transition-all">
+                <ion-icon name="pie-chart-outline" class="text-2xl block"></ion-icon>
+            </button>
+            <button id="desktop-nav-list-btn" title="Transactions" class="p-3 rounded-full bg-white hover:bg-gray-100 text-gray-500 shadow-md transition-all">
+                <ion-icon name="list-outline" class="text-2xl block"></ion-icon>
+            </button>
+            <button id="desktop-nav-debt-btn" title="Debts" class="p-3 rounded-full bg-white hover:bg-gray-100 text-gray-500 shadow-md transition-all">
+                <ion-icon name="book-outline" class="text-2xl block"></ion-icon>
+            </button>
+        </div>
+
+    </div>
+
+    <div id="add-transaction-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 modal-bg opacity-0 pointer-events-none">
+        
+        <div id="modal-card" class="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl modal-card opacity-0 transform scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold">New Transaction</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">
+                    <ion-icon name="close-outline" class="text-3xl"></ion-icon>
+                </button>
+            </div>
+            
+            <form id="transaction-form" class="space-y-5">
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="block">
+                        <input type="radio" name="type" value="expense" class="sr-only peer" checked>
+                        <div class="text-center p-3 rounded-lg border-2 border-gray-200 cursor-pointer font-medium text-gray-500 peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-600 transition-all">
+                            Expense
+                        </div>
+                    </label>
+                    <label class="block">
+                        <input type="radio" name="type" value="income" class="sr-only peer">
+                        <div class="text-center p-3 rounded-lg border-2 border-gray-200 cursor-pointer font-medium text-gray-500 peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-600 transition-all">
+                            Income
+                        </div>
+                    </label>
+                </div>
+
+                <div>
+                    <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Amount (<span id="modal-currency-label">IDR</span>)</label>
+                    <input type="number" id="amount" name="amount" step="any" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" placeholder="0.00" required>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input type="text" id="description" name="description" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" placeholder="e.g., Coffee, Salary" required>
+                </div>
+
+                <div>
+                    <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
+                    <input type="text" id="tags" name="tags" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" placeholder="e.g., food, work, transport">
+                </div>
+
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" id="date" name="date" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" required>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold p-4 rounded-lg text-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                    Add Transaction
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="add-debt-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 modal-bg opacity-0 pointer-events-none">
+        
+        <div id="debt-modal-card" class="bg-white w-full max-w-md p-6 rounded-2xl shadow-2xl modal-card opacity-0 transform scale-95">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-semibold">New Debt</h3>
+                <button id="close-debt-modal-btn" class="text-gray-400 hover:text-gray-600">
+                    <ion-icon name="close-outline" class="text-3xl"></ion-icon>
+                </button>
+            </div>
+            
+            <form id="debt-form" class="space-y-5">
+                
+                <div>
+                    <label for="debt-amount" class="block text-sm font-medium text-gray-700 mb-1">Amount Owed (<span id="debt-modal-currency-label">IDR</span>)</label>
+                    <input type="number" id="debt-amount" name="amount" step="any" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" placeholder="0.00" required>
+                </div>
+
+                <div>
+                    <label for="debt-description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input type="text" id="debt-description" name="description" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" placeholder="e.g., Credit Card Bill, Loan" required>
+                </div>
+
+                <div>
+                    <label for="debt-lender" class="block text-sm font-medium text-gray-700 mb-1">Lender (Who you owe)</label>
+                    <input type="text" id="debt-lender" name="lender" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" placeholder="e.g., Mom, Bank, Credit Card">
+                </div>
+
+                <div>
+                    <label for="debt-due-date" class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <input type="date" id="debt-due-date" name="dueDate" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500" required>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-semibold p-4 rounded-lg text-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    Add Debt
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
