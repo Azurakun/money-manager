@@ -293,17 +293,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const netBalance = totalIncome - totalExpense;
+        // --- FIX 1: Calculate total unpaid debt ---
+        let totalUnpaidDebt = 0;
+        allDebts.forEach(debt => {
+            if (!debt.isPaid) {
+                totalUnpaidDebt += debt.amount;
+            }
+        });
+        
+        // Add unpaid debt to total expense for calculations
+        const totalExpenseWithDebt = totalExpense + totalUnpaidDebt;
+        // --- END OF FIX 1 ---
+
+        // --- FIX 2: Use new total expense for balance ---
+        const netBalance = totalIncome - totalExpenseWithDebt;
+        // --- END OF FIX 2 ---
+
 
         // Convert for display
         const displayIncome = totalIncome * (exchangeRates[currentCurrency] || 1);
-        const displayExpense = totalExpense * (exchangeRates[currentCurrency] || 1);
+        // --- FIX 3: Use new total expense for display ---
+        const displayExpense = totalExpenseWithDebt * (exchangeRates[currentCurrency] || 1);
         const displayBalance = netBalance * (exchangeRates[currentCurrency] || 1);
+        // --- END OF FIX 3 ---
         
         // Update summary cards
         summaryIncome.textContent = formatCurrency(displayIncome, currentCurrency);
-        summaryExpense.textContent = formatCurrency(displayExpense, currentCurrency);
-        summaryBalance.textContent = formatCurrency(displayBalance, currentCurrency);
+        summaryExpense.textContent = formatCurrency(displayExpense, currentCurrency); // Correctly uses displayExpense
+        summaryBalance.textContent = formatCurrency(displayBalance, currentCurrency); // Correctly uses displayBalance
 
         // Update Chart
         const ctx = document.getElementById('analytics-chart').getContext('2d');
@@ -313,7 +330,9 @@ document.addEventListener('DOMContentLoaded', () => {
             analyticsChart.destroy();
         }
 
-        if (totalIncome === 0 && totalExpense === 0) {
+        // --- FIX 4: Check against new total expense ---
+        if (totalIncome === 0 && totalExpenseWithDebt === 0) {
+        // --- END OF FIX 4 ---
             // Show placeholder
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
             ctx.font = "16px Arial";
@@ -329,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: ['Income', 'Expense'],
                 datasets: [{
                     label: 'Amount',
-                    data: [displayIncome, displayExpense],
+                    data: [displayIncome, displayExpense], // Correctly uses displayExpense
                     backgroundColor: [
                         'rgba(16, 185, 129, 0.8)', // Green-500
                         'rgba(239, 68, 68, 0.8)'   // Red-500
@@ -569,6 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeDebtModal();
             await fetchDebts(); // Refetch debts
             renderDebtList(); // Re-render debt list
+            renderAnalytics(); // <-- FIX 5: Re-render analytics
             
         } catch (error) {
             console.error('Error submitting debt form:', error);
@@ -622,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             await fetchDebts(); // Refetch
             renderDebtList(); // Re-render
+            renderAnalytics(); // <-- FIX 6: Re-render analytics
             
         } catch (error) {
             console.error('Error deleting debt:', error);
@@ -644,6 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             await fetchDebts(); // Refetch
             renderDebtList(); // Re-render
+            renderAnalytics(); // <-- FIX 7: Re-render analytics
             
         } catch (error) {
             console.error('Error toggling debt:', error);
